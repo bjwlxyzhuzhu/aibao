@@ -1,0 +1,32 @@
+# 爱宝园务大脑 · 园方服务器私有化部署（Nginx 已有 HTTPS 时，把外层反代指向 web:80）
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aibao
+      POSTGRES_USER: aibao
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?请在 .env 设置 DB_PASSWORD}
+    volumes: [ "pgdata:/var/lib/postgresql/data" ]
+  api:
+    build: { context: ., dockerfile: api/Dockerfile }
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://aibao:${DB_PASSWORD}@db:5432/aibao
+      ASR_URL: http://asr:9000
+    volumes: [ "appdata:/data" ]
+    depends_on: [ db ]
+  asr:
+    build: { context: ., dockerfile: asr/Dockerfile }
+    restart: unless-stopped
+    volumes: [ "asrmodels:/models" ]
+  web:
+    build: { context: ., dockerfile: web/Dockerfile }
+    restart: unless-stopped
+    ports: [ "8080:80" ]
+    depends_on: [ api ]
+volumes:
+  pgdata: {}
+  appdata: {}
+  asrmodels: {}

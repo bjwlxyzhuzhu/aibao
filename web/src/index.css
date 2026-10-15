@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body { background: #FBF6F1; color: #2A2522; -webkit-font-smoothing: antialiased; }
+body { font-family: "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", system-ui, sans-serif; }
+@keyframes float { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
+::-webkit-scrollbar { width: 8px; height: 8px }
+::-webkit-scrollbar-thumb { background: #E9D8CA; border-radius: 8px }
+@media print {
+  body * { visibility: hidden }
+  #weekly-print, #weekly-print * { visibility: visible }
+  #weekly-print { position: absolute; left: 0; top: 0; width: 100% }
+}
+
+.no-scrollbar { scrollbar-width: none }
+.no-scrollbar::-webkit-scrollbar { display: none }

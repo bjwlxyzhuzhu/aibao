@@ -1,0 +1,131 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>系统架构与工作流图</title>
+<style>body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:#fff;color:#222;max-width:1100px;margin:0 auto;padding:16px}h1{font-size:22px}h2{font-size:17px;margin-top:36px;border-left:4px solid #E2603A;padding-left:8px}.mermaid{overflow-x:auto}@media print{h2{page-break-before:always}h2:first-of-type{page-break-before:auto}}</style>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script></head><body><h1>爱宝园务大脑 · 系统架构图与工作流图</h1><p>由 03_系统架构与工作流图.md 生成。浏览器打开后可截图，或用"打印 → 另存为 PDF"。需要联网加载 Mermaid 渲染库。</p>
+<h2>图 1 系统总体架构</h2><pre class="mermaid">flowchart TB
+  subgraph Clients[四个终端（浏览器 / 手机网页）]
+    S[教职工端&lt;br/&gt;三步巡查 · 申诉 · 整改回传]
+    P[园长端&lt;br/&gt;驾驶舱 · 复核 · 3D 议事桌]
+    F[家长端&lt;br/&gt;爱宝答疑]
+    A[管理员端&lt;br/&gt;导入中心 · 知识库 · 模型与阈值 · 脱敏日志]
+  end
+  subgraph Server[园方服务器 · Docker Compose · HTTPS]
+    WEB[web：Nginx 静态站点]
+    API[api：FastAPI 业务层&lt;br/&gt;岗位+数据范围鉴权 · SSE 推送]
+    subgraph Chains[智能体编排（自写）]
+      C1[① 保教巡查链]
+      C2[② 家园沟通链]
+      C3[③ 园务议事链]
+      OFF[离线规则引擎&lt;br/&gt;未配置模型/调用失败时兜底，界面标注]
+    end
+    SVC[业务服务&lt;br/&gt;校历单双周 · 在岗推算 · 工单时限与升级 · 导入与回滚]
+    KB[知识库&lt;br/&gt;PDF/Word → 章·条切片 → 检索]
+    DB[(PostgreSQL 16 + pgvector)]
+    FS[文件存储&lt;br/&gt;原始件 / 打码件分目录]
+    ASR[asr：本地语音识别&lt;br/&gt;SenseVoice-Small，音频不出园]
+    GW[脱敏网关&lt;br/&gt;姓名→代号 · 号码住址→占位 · 健康明细→类别&lt;br/&gt;人脸模糊 · 去 EXIF · 失败即拒发 · 全量日志]
+  end
+  LLM[云端模型：通义千问&lt;br/&gt;qwen3.8-max / qwen3.8-flash&lt;br/&gt;OpenAI 兼容接口]
+  S &amp; P &amp; F &amp; A --&gt; WEB --&gt; API
+  API --&gt; C1 &amp; C2 &amp; C3
+  API --&gt; SVC
+  C1 &amp; C2 &amp; C3 --&gt; KB
+  API --&gt; ASR
+  API --&gt; FS
+  API &amp; SVC &amp; KB --&gt; DB
+  C1 &amp; C2 &amp; C3 --&gt;|所有模型调用| GW --&gt;|只发脱敏文字和打码图片| LLM
+  C1 &amp; C2 &amp; C3 -.-&gt;|降级| OFF
+</pre>
+<h2>图 2 数据流与脱敏网关</h2><pre class="mermaid">flowchart LR
+  IN[教师上传照片 / 语音 / 文字] --&gt; IMG[本地人脸检测 YuNet&lt;br/&gt;高斯模糊全部人脸 · 去 EXIF]
+  IN --&gt; AU[本地语音转写&lt;br/&gt;音频留在园内]
+  IMG --&gt; PRE[打码预览&lt;br/&gt;教师确认后提交]
+  AU --&gt; TXT[文字]
+  PRE --&gt; GW
+  TXT --&gt; GW
+  subgraph GW[脱敏网关 pass_through_gateway]
+    T1[教职工姓名字典 → 教职工代号]
+    T2[幼儿姓名 → 幼儿编号]
+    T3[手机号 / 身份证 / 住址 → 占位符]
+    T4[体温等健康明细 → 类别]
+    T5[图片不在打码目录 → 拒发]
+  end
+  GW --&gt; PL[RedactedPayload&lt;br/&gt;大模型客户端只接受此类型]
+  GW --&gt; LOG[(脱敏日志&lt;br/&gt;前后对比 · 替换项 · 仅管理员可见)]
+  PL --&gt; LLM[通义千问]
+  LLM --&gt; OUT[JSON 结果 → pydantic 校验]
+  OUT --&gt; RS[(结果入库：agent_messages · findings&lt;br/&gt;只含代号与岗位称呼)]
+</pre>
+<h2>图 3 ① 保教巡查链工作流</h2><pre class="mermaid">flowchart TB
+  A[教师三步提交巡查&lt;br/&gt;系统预选环节、带出在岗教师] --&gt; B[脱敏网关]
+  B --&gt; C[知识库检索前 8 条相关条款]
+  C --&gt; D[巡查诊断员 星宝&lt;br/&gt;输出问题清单 findings&lt;br/&gt;每条须引用切片]
+  D --&gt;|无问题| Z[记录完成]
+  D --&gt; E[一线质询员 护苗&lt;br/&gt;逐条：反驳 / 同意 / 补充情境]
+  E --&gt;|有反驳且轮数 ≥ 2| F[诊断员答辩&lt;br/&gt;坚持 / 撤回，只回应一次]
+  E --&gt;|无反驳| G
+  F --&gt; G[条款裁判员 明理&lt;br/&gt;成立 / 不成立 / 待人工 + 置信度]
+  G --&gt; H{后端核验&lt;br/&gt;引用切片是否真实存在}
+  H --&gt;|不存在| HR[强制改为「待人工」]
+  H --&gt;|存在| I{分流}
+  HR --&gt; I
+  I --&gt;|待人工、置信度 &lt; 0.7、&lt;br/&gt;或安全/卫生/健康类| R[园长复核队列&lt;br/&gt;（复核工单计时）]
+  I --&gt;|成立且无需复核| K[整改跟踪员 小步&lt;br/&gt;起草整改单 · 按岗位建议责任人]
+  I --&gt;|不成立| Z
+  R --&gt;|园长判定成立| K2[按模板生成整改单草稿&lt;br/&gt;附园长复核意见] --&gt; L
+  R --&gt;|园长判定不成立| Z
+  K --&gt; L[园长确认 / 修改后下发&lt;br/&gt;（非园长无法下发）]
+  L --&gt; M[责任人限时整改并回传照片或说明]
+  M --&gt; N[园长验收关闭]
+  E2[教师申诉] -.-&gt; R
+  G -.-&gt;|两套结果入库| S[(诊断员单独判断 vs 对抗后裁定&lt;br/&gt;以园长复核为标准答案计算误判率)]
+</pre>
+<h2>图 4 ② 家园沟通链工作流</h2><pre class="mermaid">flowchart TB
+  Q[家长提问] --&gt; D{调度官 爱宝&lt;br/&gt;+ 关键词硬规则}
+  D --&gt;|涉及具体孩子、请假、受伤、&lt;br/&gt;身体不适、投诉、费用| TR[转班级教师&lt;br/&gt;爱宝回复「已转给老师」&lt;br/&gt;生成家长工单（2 工作小时）]
+  D --&gt;|公开知识类| K[只检索公开知识库&lt;br/&gt;作息 · 食谱 · 须知 · 通知]
+  K --&gt; A[爱宝答疑员起草&lt;br/&gt;80 字内 · 标注来源]
+  A --&gt; R[风险审查员 小卫士（红队）&lt;br/&gt;隐私 · 越权承诺 · 医疗建议 · 情绪 · 事实]
+  R --&gt;|低风险| SEND[发送给家长]
+  R --&gt;|中风险（第一次）| RW[按审查意见改写一次] --&gt; R
+  R --&gt;|高风险 / 改写后仍非低风险| BLK[拦截草稿 → 转班级教师]
+  TR &amp; BLK --&gt; T[教师在教职工端回复]
+  SEND &amp; BLK &amp; TR --&gt; ST[(驾驶舱统计：自动答复率 · 拦截数 · 转人工数 · 高频问题)]
+</pre>
+<h2>图 5 ③ 园务议事链工作流</h2><pre class="mermaid">flowchart TB
+  T[园长 / 副园长提出议题&lt;br/&gt;文字或语音，可附文件] --&gt; R1
+  subgraph R1[第一轮 陈述]
+    H1[保健 小医] 
+    T1[教师 小师]
+    P1[家长 小家]
+    S1[安全 小盾]
+  end
+  R1 --&gt; R2
+  subgraph R2[第二轮 交叉质询：每方至少质疑一方]
+    H2[保健] --&gt; X1[质疑对象]
+    T2[教师] --&gt; X2[质疑对象]
+    P2[家长] --&gt; X3[质疑对象]
+    S2[安全] --&gt; X4[质疑对象]
+  end
+  R2 --&gt; B[决策综合员 爱宝&lt;br/&gt;共识 · 保留的分歧（写明双方与分歧点）· 风险 · 2–3 个备选方案]
+  B --&gt; D[园长记录最终决定 → 归档]
+</pre>
+<h2>图 6 工单时限与两级升级</h2><pre class="mermaid">flowchart LR
+  N[工单创建&lt;br/&gt;复核 / 整改 / 验收 / 申诉 / 家长转人工] --&gt; H[时限过半或到期前&lt;br/&gt;提醒责任人]
+  H --&gt;|按时完成| D[完成，计入按时完成率]
+  H --&gt;|超时| E1[第一级：责任人 + 班长或部门负责人 + 副班长]
+  E1 --&gt;|仍未完成| E2[第二级：分管副园长 + 园长&lt;br/&gt;驾驶舱标红]
+  E1 &amp; E2 --&gt; R[(时间线与汇总)]
+  H -.-&gt;|申请延期一次，园长批准后重新计时| N
+</pre>
+<h2>图 7 3D 议事桌数据驱动</h2><pre class="mermaid">sequenceDiagram
+  participant Chain as 智能体链路
+  participant DB as agent_messages
+  participant API as /runs/{id}/stream (SSE)
+  participant UI as 3D 议事桌
+  Chain-&gt;&gt;DB: 每一轮发言（agent, action, target, cited, confidence, emotion）
+  API-&gt;&gt;DB: 轮询新发言
+  API--&gt;&gt;UI: SSE 推送
+  UI-&gt;&gt;UI: 纸片人表情 · 发言气泡 · 质询/支持/引用光束 · 裁定托盘 · 置信度环
+  UI-&gt;&gt;API: 回放：GET /runs/{id} 取全部发言按序重播
+</pre>
+<script>mermaid.initialize({startOnLoad:true,theme:"default",flowchart:{htmlLabels:true}});</script></body></html>
