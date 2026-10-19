@@ -31,7 +31,7 @@ IMPORT_DIR.mkdir(parents=True, exist_ok=True)
 # ---------------- 导入中心 ----------------
 @router.get("/import/templates")
 def download_template(p: Principal = Depends(admin_only)):
-    return FileResponse(config.SEED_DIR / "import_template_2026autumn.xlsx", filename="爱宝园务大脑_管理员导入模板_2026秋.xlsx")
+    return FileResponse(config.SEED_TEMPLATE, filename="爱宝保教智囊团_管理员导入模板_2026秋.xlsx")
 
 
 @router.post("/import/upload")
@@ -168,7 +168,7 @@ def wizard(p: Principal = Depends(admin_only), db: Session = Depends(get_db)):
 # ---------------- 知识库 ----------------
 @router.get("/kb/docs")
 def kb_docs(p: Principal = Depends(current), db: Session = Depends(get_db)):
-    if p.role not in ("admin", "principal"):
+    if p.role not in ("admin", "principal", "mentor"):
         raise HTTPException(403)
     return [{"id": d.id, "title": d.title, "kind": d.kind, "visibility": d.visibility, "status": d.status, "chunk_count": d.chunk_count,
              "is_sample": d.is_sample, "created_at": d.created_at.isoformat()}

@@ -95,10 +95,16 @@ def run_inspection(run_id: int, inspection_id: int, pace: float | None = None) -
         images = [m.path_redacted for m in (db.get(Media, i) for i in insp.media_ids) if m and m.kind == "image" and m.path_redacted]
         text = insp.text_redacted or insp.text_raw
         klass = insp.klass.name if insp.klass else ""
+        from ..models import PracticeRecord
+        practice = db.query(PracticeRecord).filter(PracticeRecord.inspection_id == insp.id).first()
 
-        ctx.emit("aibao", "route", f"收到{klass}班「{insp.segment}」环节巡查，已脱敏，转入保教巡查链。", emotion="cheer")
+        if practice:
+            ctx.emit("aibao", "route", f"收到见习学生在{klass}班「{insp.segment}」环节的保教实践记录，已脱敏，转入实践评价链。", emotion="cheer")
+        else:
+            ctx.emit("aibao", "route", f"收到{klass}班「{insp.segment}」环节巡查，已脱敏，转入保教巡查链。", emotion="cheer")
 
         # 1. 诊断员：检索前 8 条条款
+        rec_label = "见习学生实践记录" if practice else "巡查记录"
         hits = kb.search(db, f"{insp.segment} {text}", k=8)
         hit_ids = {h["id"] for h in hits}
         ctx.think("xingbao")
@@ -107,7 +113,7 @@ def run_inspection(run_id: int, inspection_id: int, pace: float | None = None) -
             return kb.search(db, q, k=3)
 
         user = f"环节：{insp.segment}\n班级：{klass}\n巡查记录：{text}\n\n可引用的条款切片：\n{_chunks_text(hits)}"
-        diag, eng = ctx.call("xingbao", "diagnoser", user, DiagOut, "max", lambda: {"findings": R.diagnose(text, insp.segment, kb_search)}, images)
+        diag, eng = ctx.call("xingbao", "p_diagnoser" if practice else "diagnoser", user, DiagOut, "max", lambda: {"findings": R.diagnose(text, insp.segment, kb_search)}, images)
         ctx.run.engine = "llm" if eng.startswith("llm") else "offline"
         findings = [f for f in diag["findings"] if f.get("item")]
         for f in findings:
@@ -116,7 +122,7 @@ def run_inspection(run_id: int, inspection_id: int, pace: float | None = None) -
             f["segment"] = insp.segment
             hit_ids.update(f.get("cited_chunks", []))
         if not findings:
-            ctx.emit("xingbao", "statement", "对照条款逐项检查，这条巡查记录未发现问题。", emotion="happy")
+            ctx.emit("xingbao", "statement", "对照条款逐项检查，这条记录未发现问题。", emotion="happy")
         for f in findings:
             ctx.emit("xingbao", "statement", f"【{f['category']}·{f['severity']}】{f['item']}。{f['reason']}", finding_key=f["id"],
                      cited=f["cited_chunks"], emotion="cheer", content=f)
@@ -127,7 +133,7 @@ def run_inspection(run_id: int, inspection_id: int, pace: float | None = None) -
         if findings:
             ctx.think("humiao")
             fl = "\n".join(f"{f['id']}: [{f['category']}/{f['severity']}] {f['item']}（引用 {f['cited_chunks']}）{f['reason']}" for f in findings)
-            ch, _ = ctx.call("humiao", "challenger", f"巡查记录：{text}\n\n诊断员问题清单：\n{fl}\n\n条款：\n{_chunks_text(hits)}",
+            ch, _ = ctx.call("humiao", "p_challenger" if practice else "challenger", f"{rec_label}：{text}\n\n诊断员问题清单：\n{fl}\n\n条款：\n{_chunks_text(hits)}",
                              ChalOut, "flash", lambda: {"challenges": R.challenge(text, findings)})
             challenges = ch["challenges"]
             for c in challenges:
@@ -140,7 +146,7 @@ def run_inspection(run_id: int, inspection_id: int, pace: float | None = None) -
             if rebuts and max_rounds >= 2:
                 ctx.think("xingbao", round=2)
                 rl = "\n".join(f"{c['finding_id']}: {c['reason']}" for c in rebuts)
-                rp, _ = ctx.call("xingbao", "diagnoser_reply", f"巡查记录：{text}\n被反驳的问题：\n{rl}", ReplyOut, "max",
+                rp, _ = ctx.call("xingbao", "diagnoser_reply", f"{rec_label}：{text}\n被反驳的问题：\n{rl}", ReplyOut, "max",
                                  lambda: {"replies": R.reply(challenges, findings)})
                 replies = rp["replies"]
                 for r in replies:
@@ -152,8 +158,8 @@ def run_inspection(run_id: int, inspection_id: int, pace: float | None = None) -
             ctx.think("mingli", round=2)
             cl = "\n".join(f"{c['finding_id']}: {c['stance']} {c['reason']}" for c in challenges)
             rl2 = "\n".join(f"{r['finding_id']}: {r['decision']} {r['reason']}" for r in replies) or "无"
-            jd, _ = ctx.call("mingli", "judge",
-                             f"巡查记录：{text}\n\n条款：\n{_chunks_text(hits)}\n\n问题清单：\n{fl}\n\n质询：\n{cl}\n\n答辩：\n{rl2}",
+            jd, _ = ctx.call("mingli", "p_judge" if practice else "judge",
+                             f"{rec_label}：{text}\n\n条款：\n{_chunks_text(hits)}\n\n问题清单：\n{fl}\n\n质询：\n{cl}\n\n答辩：\n{rl2}",
                              JudgeOut, "max", lambda: {"verdicts": R.judge(findings, challenges, replies)})
             vmap = {v["finding_id"]: v for v in jd["verdicts"]}
             existing = {c.id for c in db.query(KbChunk.id).filter(KbChunk.id.in_(list(hit_ids) or [0]))}
@@ -182,14 +188,23 @@ def run_inspection(run_id: int, inspection_id: int, pace: float | None = None) -
                          target="xingbao", finding_key=f["id"], cited=cited, confidence=conf, emotion=emo,
                          content={"result": v["result"], "finding_db_id": fobj.id, "needs_review": fobj.needs_review,
                                   "review_reason": fobj.review_reason})
-                # 5. 分流
-                if fobj.needs_review:
+                # 5. 分流（实践记录：一律交双导师评阅，不生成整改单与工单）
+                if practice:
+                    fobj.needs_review = True
+                    fobj.review_reason = (fobj.review_reason + "；" if fobj.review_reason else "") + "导师评阅"
+                elif fobj.needs_review:
                     create_work_order(db, "review", fobj.id, f"复核：{insp.klass.name}班 {fobj.item}", None,
                                       "高" if fobj.category in force_cats else "中", insp.class_id, insp.is_demo)
                 elif v["result"] == "valid":
                     _draft_rectification(ctx, insp, fobj)
-        insp.status = "done"
-        ctx.emit("aibao", "state", "本次巡查对抗完成。需要复核的条目已进入园长队列，整改单草稿等待园长确认。", emotion="happy")
+        if practice:
+            from ..services.practice import score_record
+            score_record(ctx, practice, insp, findings, text)
+            insp.status = "done"
+            ctx.emit("aibao", "state", "本次实践评价完成。五维评分与改进建议为 AI 草稿，等待高校导师与园所导师评阅确认。", emotion="happy")
+        else:
+            insp.status = "done"
+            ctx.emit("aibao", "state", "本次巡查对抗完成。需要复核的条目已进入园长队列，整改单草稿等待园长确认。", emotion="happy")
         ctx.finish()
     except Exception as e:  # noqa: BLE001
         import traceback

@@ -229,7 +229,7 @@ function WeeklyReport() {
       <Modal open={open} onClose={() => setOpen(false)} title="本周巡查周报" wide>
         {r && (
           <div id="weekly-print" className="space-y-4 bg-white p-6 rounded-2xl">
-            <div className="flex items-center gap-3 border-b pb-3"><img src="/logo.png" className="h-10" alt="" /><div><div className="font-black text-brand-orange">宝鸡幼儿园</div><div className="text-xs text-ink-3">爱宝园务大脑 · 巡查周报 · {fmtTime(r.generated_at)}</div></div>
+            <div className="flex items-center gap-3 border-b pb-3"><img src="/logo.png" className="h-10" alt="" /><div><div className="font-black text-brand-orange">实践基地园</div><div className="text-xs text-ink-3">爱宝保教智囊团 · 巡查周报 · {fmtTime(r.generated_at)}</div></div>
               <Badge tone="amber" className="ml-auto">{r.note}</Badge></div>
             <p className="leading-7">{r.summary}</p>
             <div><div className="font-bold">重点</div><ul className="ml-5 list-disc text-sm">{r.highlights.map((h: string, i: number) => <li key={i}>{h}</li>)}</ul></div>

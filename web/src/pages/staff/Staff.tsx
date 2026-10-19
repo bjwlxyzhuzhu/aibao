@@ -24,6 +24,7 @@ export function StaffShell() {
     { to: '/staff/mine', label: '记录', icon: <IClip /> },
     { to: '/staff/rect', label: '整改', icon: <IFile /> },
     { to: '/staff/parents', label: '家长', icon: <IUsers /> },
+    { to: '/staff/practice', label: '见习', icon: <IFile /> },
     { to: '/staff/ask', label: '助手', icon: <ISearch /> },
   ]
   return (
@@ -50,7 +51,7 @@ export function StaffShell() {
 }
 
 // 前端压缩：长边 1600px
-async function compress(file: File): Promise<Blob> {
+export async function compress(file: File): Promise<Blob> {
   const bmp = await createImageBitmap(file)
   const s = Math.min(1, 1600 / Math.max(bmp.width, bmp.height))
   const c = document.createElement('canvas')

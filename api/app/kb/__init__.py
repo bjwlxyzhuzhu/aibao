@@ -44,12 +44,13 @@ def chunk_text(text: str, max_len: int = 420) -> list[tuple[str, str]]:
     """返回 [(条款号, 文本)]。条款号形如"第二章 第十条"或"3.2"。"""
     chunks: list[tuple[str, str]] = []
     chapter = ""
+    sub = ""  # 二级标题：（一）身心状况 / 关键指标 B5.生活照料
     cur_no, cur = "", []
 
     def flush():
         body = "\n".join(cur).strip()
         if body:
-            label = " ".join(x for x in (chapter, cur_no) if x).strip() or "正文"
+            label = " ".join(x for x in (chapter, sub, cur_no) if x).strip() or "正文"
             while len(body) > max_len:
                 cut = body.rfind("。", 0, max_len)
                 cut = cut + 1 if cut > max_len // 3 else max_len
@@ -68,10 +69,31 @@ def chunk_text(text: str, max_len: int = 420) -> list[tuple[str, str]]:
             chapter = (m.group(1) + " " + m.group(2)).strip()
             continue
         if re.match(r"^[一二三四五六七八九十]+、", line) and len(line) <= 16:  # "一、入园与离园"这类小标题视为章
-            flush(); cur, cur_no = [], ""
+            flush(); cur, cur_no, sub = [], "", ""
             chapter = line
             continue
+        if line.startswith("重点内容 ") and len(line) <= 24:  # 评估指南：重点内容 A2.保育与安全
+            flush(); cur, cur_no, sub = [], "", ""
+            chapter = line.replace("重点内容 ", "")
+            continue
+        if line.startswith("维度：") and len(line) <= 20:  # 专业标准：维度：专业理念与师德
+            flush(); cur, cur_no, sub = [], "", ""
+            chapter = line.replace("维度：", "")
+            continue
+        if (line.startswith("关键指标 ") and len(line) <= 24) or (re.match(r"^[（(][一二三四五六七八九十]+[）)]", line) and len(line) <= 16):
+            flush(); cur, cur_no = [], ""
+            sub = re.sub(r"^\(([一二三四五六七八九十]+)\)", lambda m: "（" + m.group(1) + "）", line.replace("关键指标 ", ""))
+            continue
         if line.startswith("#"):
+            continue
+        m = re.match(r"^(目标\d+)\s*(.*)$", line) or re.match(r"^(考查要点\d+)[.．]\s*(.*)$", line)
+        if m:  # 指南"目标N"、评估指南"考查要点N"作为最小引用单位
+            flush()
+            cur_no = m.group(1)
+            cur = [line]
+            continue
+        if line.startswith("教育建议") and cur_no.startswith("目标"):
+            cur.append(line)
             continue
         m = CLAUSE_RE.match(line) or NUM_RE.match(line)
         if m:

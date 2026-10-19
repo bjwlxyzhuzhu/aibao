@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { Button, Spinner, cx } from '../components/ui'
-import { useApp } from '../store'
+import { useApp, useSchool } from '../store'
 
-export const homeOf = (role: string) => ({ principal: '/principal', staff: '/staff', admin: '/admin', parent: '/parent' } as Record<string, string>)[role] || '/'
+export const homeOf = (role: string) => ({ principal: '/principal', staff: '/staff', admin: '/admin', parent: '/parent', student: '/student', mentor: '/mentor' } as Record<string, string>)[role] || '/'
 
 export default function Login() {
   const [info, setInfo] = useState<any>(null)
@@ -15,6 +15,7 @@ export default function Login() {
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
   const app = useApp()
+  const school = useSchool()
   const nav = useNavigate()
   useEffect(() => { api('/public/info').then(setInfo).catch(() => {}) }, [])
   const go = async (body: () => Promise<any>) => {
@@ -30,13 +31,13 @@ export default function Login() {
       <div className="grid w-full max-w-5xl overflow-hidden rounded-[32px] bg-white/80 shadow-2xl backdrop-blur md:grid-cols-2">
         <div className="relative hidden flex-col justify-between bg-gradient-to-br from-[#FFF1E6] to-[#FBE0D2] p-10 md:flex">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" className="h-16 w-16" alt="宝鸡幼儿园园徽" />
-            <div><div className="text-2xl font-black text-brand-orange">宝鸡幼儿园</div><div className="text-[10px] font-bold tracking-[0.2em] text-brand-orange/80">BAO JI YOU ER YUAN</div></div>
+            <img src={school.logo} className="h-16 w-16 object-contain" alt="标识" />
+            <div><div className="text-2xl font-black text-brand-orange">{school.name}</div>{!school.anon && <div className="text-[10px] font-bold tracking-[0.2em] text-brand-orange/80">BAO JI YOU ER YUAN</div>}</div>
           </div>
           <div>
-            <div className="text-4xl font-black leading-tight">爱宝园务大脑</div>
-            <div className="mt-2 text-lg text-ink-2">幼儿园保教治理"对抗—协同"多智能体系统</div>
-            <div className="mt-4 flex flex-wrap gap-2 text-xs">{['保教巡查链', '家园沟通链', '园务议事链', '脱敏网关', '园长在回路'].map((t) => <span key={t} className="rounded-full bg-white/80 px-3 py-1">{t}</span>)}</div>
+            <div className="text-4xl font-black leading-tight">爱宝保教智囊团</div>
+            <div className="mt-2 text-lg text-ink-2">{school.anon ? '学前教育保教实践能力"对抗—协同"评价智能体' : '幼儿园保教治理"对抗—协同"多智能体系统'}</div>
+            <div className="mt-4 flex flex-wrap gap-2 text-xs">{(school.anon ? ['见习实践记录', '对抗诊断', '条款裁判', '双导师评阅', '成长档案'] : ['保教巡查链', '家园沟通链', '园务议事链', '脱敏网关', '园长在回路']).map((t) => <span key={t} className="rounded-full bg-white/80 px-3 py-1">{t}</span>)}</div>
           </div>
           <div className="flex items-end gap-2">
             <img src="/mascot/aibao.png" className="h-44 drop-shadow-xl" alt="爱宝" />
@@ -44,7 +45,7 @@ export default function Login() {
           </div>
         </div>
         <div className="p-7 sm:p-10">
-          <div className="md:hidden mb-6 flex items-center gap-3"><img src="/logo.png" className="h-12" alt="" /><div><div className="font-black text-brand-orange">宝鸡幼儿园</div><div className="font-bold">爱宝园务大脑</div></div></div>
+          <div className="md:hidden mb-6 flex items-center gap-3"><img src={school.logo} className="h-12 object-contain" alt="" /><div><div className="font-black text-brand-orange">{school.name}</div><div className="font-bold">爱宝保教智囊团</div></div></div>
           <div className="text-2xl font-black">欢迎登录</div>
           <div className="mt-1 text-sm text-ink-3">{info?.calendar ? `${info.calendar.date} ${info.calendar.weekday} · ${info.calendar.semester || ''}${info.calendar.week_no ? ` 第${info.calendar.week_no}周（${info.calendar.parity_cn}）` : ''}` : ''}</div>
           <div className="mt-6 inline-flex rounded-full bg-cream-2 p-1 text-sm">
@@ -68,7 +69,7 @@ export default function Login() {
             <div className="mt-8">
               <div className="text-xs text-ink-3">演示模式 · 一键体验（生产环境设置 DEMO_MODE=false 后隐藏）</div>
               <div className="mt-2 flex flex-wrap gap-2">
-                {info.demo_accounts.map((a: any) => <button key={a.login} onClick={() => quick(a)} className="rounded-full bg-terra-50 px-3 py-1.5 text-sm text-terra-700 hover:bg-terra-100">{a.label}</button>)}
+                {info.demo_accounts.filter((a: any) => !school.anon || ['mentor', 'student', 'staff', 'admin'].includes(a.portal)).map((a: any) => <button key={a.login} onClick={() => quick(a)} className="rounded-full bg-terra-50 px-3 py-1.5 text-sm text-terra-700 hover:bg-terra-100">{a.label}</button>)}
               </div>
             </div>
           )}

@@ -2,7 +2,7 @@
 export type Me = {
   user_id: number
   login: string
-  role: 'principal' | 'staff' | 'admin' | 'parent'
+  role: 'principal' | 'staff' | 'admin' | 'parent' | 'student' | 'mentor'
   name: string
   positions: string[]
   class_ids: number[]

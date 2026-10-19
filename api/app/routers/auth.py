@@ -92,7 +92,9 @@ def public_info(db: Session = Depends(get_db)):
             {"label": "保育员（大一班）", "login": "dayi_baoyu", "portal": "staff"},
             {"label": "管理员", "login": "admin", "portal": "admin"},
             {"label": "家长（邀请码）", "login": "DA1A26", "portal": "parent"},
+            {"label": "高校导师", "login": "gaoxiao_daoshi", "portal": "mentor"},
+            {"label": "见习学生A", "login": "xs_a", "portal": "student"},
         ]
-    return {"school": "宝鸡幼儿园", "product": "爱宝园务大脑", "demo_mode": config.DEMO_MODE,
+    return {"school": config.SCHOOL_NAME, "anon": config.ANON_MODE, "product": "爱宝保教智囊团", "demo_mode": config.DEMO_MODE,
             "demo_accounts": demo, "demo_password": config.DEMO_PASSWORD if config.DEMO_MODE else None,
             "calendar": calendar_today(db)}

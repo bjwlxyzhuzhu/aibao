@@ -36,7 +36,7 @@ def seed_base() -> None:
         db.add(User(login="yuanzhang", staff_id=boss.id, password_hash=hash_pw(config.DEMO_PASSWORD),
                     must_change_password=not config.DEMO_MODE, role="principal"))
         # 导入园方模板（人员、班级任职、校历、作息、特色课表）
-        path = config.SEED_DIR / "import_template_2026autumn.xlsx"
+        path = config.SEED_TEMPLATE
         if not path.exists():  # 参赛代码包不含园方名单：由管理员在导入中心上传
             seed_policies(db)
             db.commit()
@@ -88,7 +88,7 @@ def seed_assets() -> None:
     with SessionLocal() as db:
         if db.scalar(select(Avatar.id).limit(1)):
             return
-        for agent_dir in AVATAR_ROOT.iterdir() if AVATAR_ROOT.exists() else []:
+        for agent_dir in AVATAR_ROOT.iterdir():
             if not agent_dir.is_dir():
                 continue
             for f in agent_dir.iterdir():
@@ -274,8 +274,11 @@ def run_all(with_demo: bool = True) -> None:
     init_db()
     seed_base()
     ensure_demo_aliases()
+    from .seed_practice import seed_national_kb, seed_practice_demo
+    seed_national_kb()
     if with_demo:
         seed_demo_activity()
+        seed_practice_demo()
 
 
 if __name__ == "__main__":

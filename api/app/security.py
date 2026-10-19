@@ -69,7 +69,7 @@ class Principal:
     def name(self) -> str:
         if self.staff:
             return self.staff.name
-        return {"principal": "园长", "admin": "管理员", "parent": "家长"}.get(self.role, self.user.login)
+        return {"principal": "园长", "admin": "管理员", "parent": "家长", "mentor": "高校导师", "student": "见习学生"}.get(self.role, self.user.login)
 
     def can_see_class(self, class_id: int | None) -> bool:
         if self.scope in ("all", "edu", "logistics", "summary"):

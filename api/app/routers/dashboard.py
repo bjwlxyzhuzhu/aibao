@@ -263,7 +263,7 @@ def staff_search(q: str = "", p: Principal = Depends(current), db: Session = Dep
 # ---------- 品牌与形象（未登录可访问，只读展示，不进模型） ----------
 @router.get("/brand")
 def brand(db: Session = Depends(get_db)):
-    out = {"name": "宝鸡幼儿园", "product": "爱宝园务大脑", "palette": {"primary": "#019E33", "secondary": "#C4EA03", "accent": "#F56D01"}}
+    out = {"name": "实践基地园", "product": "爱宝保教智囊团", "palette": {"primary": "#019E33", "secondary": "#C4EA03", "accent": "#F56D01"}}
     assets = {b.kind: f"/api/brand/file/{b.id}" for b in db.scalars(select(BrandAsset).where(BrandAsset.active.is_(True)))}
     out["assets"] = assets
     return out

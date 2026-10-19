@@ -1,4 +1,4 @@
-# 爱宝园务大脑 · 园方服务器私有化部署（Nginx 已有 HTTPS 时，把外层反代指向 web:80）
+# 爱宝保教智囊团 · 园方服务器私有化部署（Nginx 已有 HTTPS 时，把外层反代指向 web:80）
 services:
   db:
     image: pgvector/pgvector:pg16

@@ -1,4 +1,4 @@
-"""爱宝园务大脑 · FastAPI 入口。"""
+"""爱宝保教智囊团 · FastAPI 入口。"""
 from __future__ import annotations
 
 import threading
@@ -11,14 +11,14 @@ from fastapi.staticfiles import StaticFiles
 
 from . import config
 from .db import SessionLocal
-from .routers import admin, auth, dashboard, inspect, parent_council
+from .routers import admin, auth, dashboard, inspect, parent_council, practice
 from .seed import run_all
 
-app = FastAPI(title="爱宝园务大脑 API", version="0.1.0", docs_url="/api/docs", openapi_url="/api/openapi.json")
+app = FastAPI(title="爱宝保教智囊团 API", version="0.1.0", docs_url="/api/docs", openapi_url="/api/openapi.json")
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"], allow_credentials=True,
                    allow_methods=["*"], allow_headers=["*"])
 
-for r in (auth.router, inspect.router, dashboard.router, parent_council.router, admin.router):
+for r in (auth.router, inspect.router, dashboard.router, parent_council.router, admin.router, practice.router):
     app.include_router(r, prefix="/api")
 
 

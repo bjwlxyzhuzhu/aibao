@@ -1,18 +1,19 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { api } from '../api'
-import { useApp } from '../store'
+import { useApp, useSchool } from '../store'
 import { cx } from './ui'
 import { IBell, IBook, IChevron, IClip, IDB, IFile, IHome, ILogout, ISearch, ISettings, IShield, IUpload, IUsers, IClock, IPlay } from './icons'
 
 export function Brand({ compact }: { compact?: boolean }) {
+  const school = useSchool()
   return (
     <div className={cx('flex items-center', compact ? 'gap-2' : 'flex-col gap-1 text-center')}>
-      <img src="/logo.png" alt="宝鸡幼儿园园徽" className={compact ? 'h-9 w-9' : 'h-16 w-16'} />
+      <img src={school.logo} alt="标识" className={cx(compact ? 'h-9 w-9' : 'h-16 w-16', 'object-contain')} />
       <div className={compact ? 'leading-tight' : ''}>
-        <div className={cx('font-black tracking-wide text-brand-orange', compact ? 'text-sm' : 'text-lg')}>宝鸡幼儿园</div>
-        {!compact && <div className="text-[9px] font-bold tracking-[0.18em] text-brand-orange/80">BAO JI YOU ER YUAN</div>}
-        <div className={cx('font-bold text-ink', compact ? 'text-xs' : 'mt-1 text-[17px]')}>爱宝园务大脑</div>
+        <div className={cx('font-black tracking-wide text-brand-orange', compact ? 'text-sm' : 'text-lg')}>{school.name}</div>
+        {!compact && !school.anon && <div className="text-[9px] font-bold tracking-[0.18em] text-brand-orange/80">BAO JI YOU ER YUAN</div>}
+        <div className={cx('font-bold text-ink', compact ? 'text-xs' : 'mt-1 text-[17px]')}>爱宝保教智囊团</div>
       </div>
     </div>
   )
@@ -27,6 +28,13 @@ const PRINCIPAL_NAV: NavItem[] = [
   { to: '/principal/arena', label: '对抗回放', icon: <IPlay /> },
   { to: '/principal/knowledge', label: '知识库', icon: <IBook /> },
 ]
+const MENTOR_NAV: NavItem[] = [
+  { to: '/mentor', label: '学生总览', icon: <IUsers />, end: true },
+  { to: '/mentor/review', label: '记录评阅', icon: <IClip /> },
+  { to: '/mentor/arena', label: '对抗回放', icon: <IPlay /> },
+  { to: '/mentor/metrics', label: '成效数据', icon: <IFile /> },
+  { to: '/mentor/knowledge', label: '知识库', icon: <IBook /> },
+]
 const ADMIN_NAV: NavItem[] = [
   { to: '/admin', label: '初始化向导', icon: <IHome />, end: true },
   { to: '/admin/import', label: '导入中心', icon: <IUpload /> },
@@ -40,9 +48,9 @@ const ADMIN_NAV: NavItem[] = [
   { to: '/admin/brand', label: '形象与品牌', icon: <IDB /> },
 ]
 
-export function DeskLayout({ kind }: { kind: 'principal' | 'admin' }) {
+export function DeskLayout({ kind }: { kind: 'principal' | 'admin' | 'mentor' }) {
   const { me, logout } = useApp()
-  const nav = kind === 'principal' ? PRINCIPAL_NAV : ADMIN_NAV
+  const nav = kind === 'principal' ? PRINCIPAL_NAV : kind === 'mentor' ? MENTOR_NAV : ADMIN_NAV
   const [notes, setNotes] = useState<{ id: number; title: string; read: boolean }[]>([])
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
@@ -69,7 +77,7 @@ export function DeskLayout({ kind }: { kind: 'principal' | 'admin' }) {
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-terra-100 font-bold text-terra-600">{me?.name?.[0] || '园'}</div>
             <div className="min-w-0 flex-1 leading-tight">
               <div className="truncate font-semibold">{me?.name}</div>
-              <div className="truncate text-xs text-ink-3">{me?.positions?.join('、') || '宝鸡幼儿园'}</div>
+              <div className="truncate text-xs text-ink-3">{me?.positions?.join('、') || (me?.role === 'mentor' ? '高校导师' : '')}</div>
             </div>
             <button onClick={logout} title="退出登录" className="rounded-full p-1.5 text-ink-3 hover:bg-cream-2"><ILogout size={18} /></button>
           </div>
@@ -102,7 +110,7 @@ export function DeskLayout({ kind }: { kind: 'principal' | 'admin' }) {
           </div>
           <div className="flex items-center gap-2">
             <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-terra-100 to-terra-200 text-lg font-bold text-terra-600 ring-2 ring-white">{me?.name?.[0]}</div>
-            <span className="text-[15px]">{me?.role === 'admin' ? '管理员' : me?.positions?.[0] || '园长'}</span>
+            <span className="text-[15px]">{me?.role === 'admin' ? '管理员' : me?.role === 'mentor' ? '高校导师' : me?.positions?.[0] || '园长'}</span>
             <IChevron size={16} className="rotate-90 text-ink-3" />
           </div>
         </div>

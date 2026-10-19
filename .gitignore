@@ -10,14 +10,3 @@ _*.png
 _*.jpg
 _out.txt
 dist_package/
-.claude/
-**/.venv/
-**/node_modules/
-**/*.tsbuildinfo
-**/*.db
-**/*.db-*
-**/.env
-**/.env.*
-!.env.example
-api/seed_data/*.xlsx
-**/initial_passwords*.csv

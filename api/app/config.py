@@ -59,3 +59,9 @@ for d in (RAW_DIR, REDACTED_DIR):
 ASSETS_DIR = Path(os.getenv("ASSETS_DIR", str(ROOT_DIR / "assets")))
 PROMPTS_DIR = BASE_DIR / "prompts"
 SEED_DIR = BASE_DIR / "seed_data"
+# 首次启动导入的园方模板；录制参赛视频时指向虚构名单副本，界面不出现真实教职工姓名
+SEED_TEMPLATE = Path(os.getenv("SEED_TEMPLATE", str(SEED_DIR / "import_template_2026autumn.xlsx")))
+
+# 双盲模式：参赛录屏与评审演示时隐藏园所名称与园徽
+ANON_MODE = env("ANON_MODE", "true").lower() == "true"
+SCHOOL_NAME = "实践基地园" if ANON_MODE else env("SCHOOL_NAME", "实践基地园")

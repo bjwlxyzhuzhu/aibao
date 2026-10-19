@@ -29,6 +29,15 @@ const Settings = lazy(() => A().then((m) => ({ default: m.Settings })))
 const Logs = lazy(() => A().then((m) => ({ default: m.Logs })))
 const Sla = lazy(() => A().then((m) => ({ default: m.Sla })))
 const BrandPage = lazy(() => A().then((m) => ({ default: m.BrandPage })))
+const P = () => import('./pages/practice/Practice')
+const StudentShell = lazy(() => P().then((m) => ({ default: m.StudentShell })))
+const StudentNew = lazy(() => P().then((m) => ({ default: m.StudentNew })))
+const StudentList = lazy(() => P().then((m) => ({ default: m.StudentList })))
+const StudentRecord = lazy(() => P().then((m) => ({ default: m.StudentRecord })))
+const StudentGrowth = lazy(() => P().then((m) => ({ default: m.StudentGrowth })))
+const MentorOverview = lazy(() => P().then((m) => ({ default: m.MentorOverview })))
+const MentorReview = lazy(() => P().then((m) => ({ default: m.MentorReview })))
+const MentorMetrics = lazy(() => P().then((m) => ({ default: m.MentorMetrics })))
 
 function Guard({ roles, children }: { roles: string[]; children: ReactNode }) {
   const { me, loading } = useApp()
@@ -70,6 +79,20 @@ export default function App() {
                 <Route path="rect" element={<MyRect />} />
                 <Route path="parents" element={<ParentQueue />} />
                 <Route path="ask" element={<StaffAssistant />} />
+                <Route path="practice" element={<MentorReview mobile />} />
+              </Route>
+              <Route path="/student" element={<Guard roles={['student']}><StudentShell /></Guard>}>
+                <Route index element={<StudentNew />} />
+                <Route path="list" element={<StudentList />} />
+                <Route path="r/:id" element={<StudentRecord />} />
+                <Route path="growth" element={<StudentGrowth />} />
+              </Route>
+              <Route path="/mentor" element={<Guard roles={['mentor']}><DeskLayout kind="mentor" /></Guard>}>
+                <Route index element={<MentorOverview />} />
+                <Route path="review" element={<MentorReview />} />
+                <Route path="arena" element={<Arena />} />
+                <Route path="metrics" element={<MentorMetrics />} />
+                <Route path="knowledge" element={<Knowledge />} />
               </Route>
               <Route path="/parent" element={<Guard roles={['parent', 'principal', 'admin']}><ParentChat /></Guard>} />
               <Route path="/admin" element={<Guard roles={['admin']}><DeskLayout kind="admin" /></Guard>}>

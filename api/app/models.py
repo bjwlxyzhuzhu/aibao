@@ -505,3 +505,46 @@ class BrandAsset(Base):
     palette_json: Mapped[dict] = mapped_column(JSON, default=dict)
     version: Mapped[int] = mapped_column(Integer, default=1)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+# ---------- 实践教学（学前教育本科生见习 / 实习）----------
+class PracticeStudent(Base):
+    """见习 / 实习学生。只存代号与学号后缀，不存真实姓名（双盲与隐私）。"""
+    __tablename__ = "practice_students"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    code: Mapped[str] = mapped_column(String(16))          # 学生A
+    cohort: Mapped[str] = mapped_column(String(32))        # 2023级学前教育1班
+    class_id: Mapped[int | None] = mapped_column(Integer, nullable=True)        # 见习所在幼儿园班级
+    mentor_u_user_id: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 高校导师
+    mentor_k_staff_id: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 园所导师
+    is_demo: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class PracticeRecord(Base):
+    __tablename__ = "practice_records"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    student_id: Mapped[int] = mapped_column(ForeignKey("practice_students.id"), index=True)
+    inspection_id: Mapped[int] = mapped_column(ForeignKey("inspections.id"))
+    week_no: Mapped[int] = mapped_column(Integer, default=1)
+    reflection: Mapped[str] = mapped_column(Text, default="")
+    reflection_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    mentor_u_comment: Mapped[str] = mapped_column(Text, default="")
+    mentor_k_comment: Mapped[str] = mapped_column(Text, default="")
+    mentor_u_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    mentor_k_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    is_demo: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class RubricScore(Base):
+    """五维保教实践能力评分；source=ai / mentor_u / mentor_k，以导师评分为最终结果。"""
+    __tablename__ = "rubric_scores"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    record_id: Mapped[int] = mapped_column(ForeignKey("practice_records.id", ondelete="CASCADE"), index=True)
+    dim: Mapped[str] = mapped_column(String(16))
+    score: Mapped[int] = mapped_column(Integer)
+    evidence: Mapped[str] = mapped_column(Text, default="")
+    cited_chunk_ids: Mapped[list] = mapped_column(JSON, default=list)
+    source: Mapped[str] = mapped_column(String(12))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)

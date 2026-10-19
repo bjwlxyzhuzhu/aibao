@@ -93,7 +93,7 @@ export function ImportCenter() {
       <div className="grid gap-5 lg:grid-cols-[1fr_380px]">
         <Card className="p-5">
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => dl('/admin/import/templates', '爱宝园务大脑_管理员导入模板_2026秋.xlsx')}>下载导入模板</Button>
+            <Button variant="ghost" size="sm" onClick={() => dl('/admin/import/templates', '爱宝保教智囊团_管理员导入模板_2026秋.xlsx')}>下载导入模板</Button>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
             {KINDS.map((x) => (
@@ -444,7 +444,7 @@ export function BrandPage() {
     <Page title="形象与品牌" sub="园徽与吉祥物只作展示，不进入任何模型调用；真人形象须附本人授权书">
       <Card className="flex flex-wrap items-center gap-6 p-5">
         <img src="/logo.png" className="h-24" alt="园徽" />
-        <div><div className="text-2xl font-black text-brand-orange">宝鸡幼儿园</div><div className="mt-1 flex gap-2">{['#019E33', '#C4EA03', '#F56D01', '#D46A47'].map((c) => <span key={c} className="flex items-center gap-1 text-xs"><i className="h-5 w-5 rounded-full" style={{ background: c }} />{c}</span>)}</div></div>
+        <div><div className="text-2xl font-black text-brand-orange">实践基地园</div><div className="mt-1 flex gap-2">{['#019E33', '#C4EA03', '#F56D01', '#D46A47'].map((c) => <span key={c} className="flex items-center gap-1 text-xs"><i className="h-5 w-5 rounded-full" style={{ background: c }} />{c}</span>)}</div></div>
         <Button className="ml-auto" variant="soft" onClick={() => nav('/admin/import')}>上传 / 替换园徽与形象</Button>
       </Card>
       <div className="mt-4 grid gap-4 md:grid-cols-2">

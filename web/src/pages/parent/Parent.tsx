@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { api, streamRun } from '../../api'
 import { ISend } from '../../components/icons'
 import { Spinner, cx } from '../../components/ui'
-import { useApp, useAvatar } from '../../store'
+import { useApp, useAvatar, useSchool } from '../../store'
 
 const FAQ = ['几点入园？', '每周食谱在哪里看？', '户外特色课有哪些？', '孩子需要带备用衣物吗？', '周五下午有什么安排？', '我家孩子今天有点咳嗽可以来吗？']
 
 export default function ParentChat() {
   const { me, logout } = useApp()
+  const school = useSchool()
   const [thread, setThread] = useState<any>(null)
   const [q, setQ] = useState('')
   const [emotion, setEmotion] = useState('bye')
@@ -32,8 +33,8 @@ export default function ParentChat() {
   return (
     <div className="mx-auto flex min-h-screen max-w-[520px] flex-col bg-gradient-to-b from-[#FFF3EA] to-cream">
       <header className="flex items-center gap-3 px-4 pb-2 pt-[max(env(safe-area-inset-top),12px)]">
-        <img src="/logo.png" className="h-9 w-9" alt="" />
-        <div className="leading-tight"><div className="text-sm font-black text-brand-orange">宝鸡幼儿园</div><div className="text-xs text-ink-3">{thread?.class_name ? `${thread.class_name}班家长` : '家长'} · 爱宝答疑</div></div>
+        <img src={school.logo} className="h-9 w-9 object-contain" alt="" />
+        <div className="leading-tight"><div className="text-sm font-black text-brand-orange">{school.name}</div><div className="text-xs text-ink-3">{thread?.class_name ? `${thread.class_name}班家长` : '家长'} · 爱宝答疑</div></div>
         <button onClick={logout} className="ml-auto rounded-full bg-white px-3 py-1 text-xs text-ink-3">退出</button>
       </header>
       <div className="flex flex-col items-center px-4">
